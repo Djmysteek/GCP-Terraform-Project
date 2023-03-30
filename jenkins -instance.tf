@@ -1,8 +1,9 @@
-resource "google_compute_instance" "jenkins_server" {
-    name = "jenkins_sever"
+resource "google_compute_instance" "jenkins-server" {
+    name = "jenkins-sever"
     machine_type = var.machine_type
     zone = var.zone
-
+ 
+    
     boot_disk {
        initialize_params {
          image = var.boot_disk_image
@@ -12,11 +13,14 @@ resource "google_compute_instance" "jenkins_server" {
 
     network_interface {
       network = "default"
+      access_config {
+        // Ephemeral IP
+      }
     }
-  
+ 
 
+    metadata_startup_script = <<-EOT
 
-  metadata_startup_script = <<-EOT
     # Install Jenkins
     wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
     sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > /etc/apt/sources.list.d/jenkins.list'
@@ -30,6 +34,19 @@ resource "google_compute_instance" "jenkins_server" {
     rm terraform_1.0.9_linux_amd64.zip
 
     # Start Jenkins
+    # Start Jenkins
     sudo systemctl start jenkins
-  EOT
+
+EOT
+
+    connection {
+       type        = "ssh"
+        user        = "ubuntu"
+        host        = google_compute_address.terraform_static_ip.address
+        timeout     = "2m"
+        private_key = file("mykey")
+    }
+ 
+
 }
+
